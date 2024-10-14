@@ -91,48 +91,33 @@ module "azure_storage_account" {
 }
 
 
-module "akv_merlion" {
-  source              = "git::https://github.com/BrettOJ/tf-az-module-key-vault?ref=main" 
+module "azurerm_key_vault" {
+  source              = "git::https://github.com/BrettOJ/tf-az-module-azure-key-vault?ref=main" 
   resource_group_name = module.resource_groups.rg_output[1].name
   location            = var.location
-  sku                 = "premium"
-  akv_policies = {
-    sp2 = {
-      object_id          = data.azurerm_client_config.current.object_id
-      tenant_id          = data.azurerm_client_config.current.tenant_id
-      key_permissions    = ["Create", "Get", "Delete", "Update"]
-      secret_permissions = ["Get", "List", "Set"]
-    }
-  }
-  network_acls = [
-    {
+  sku_name    = "standard"
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+  enabled_for_deployment          = true
+  enabled_for_disk_encryption     = true
+  enabled_for_template_deployment = true
+  enable_rbac_authorization       = true
+  purge_protection_enabled        = true
+  public_network_access_enabled   = true
+  soft_delete_retention_days      = 7 
+
+
+  network_acls = {
       bypass         = "AzureServices"
       default_action = "Allow"
       ip_rules       = null
-      subnet_ids     = null
+      virtual_network_subnet_ids     = null
     }
-  ]
-
-  akv_features = {
-    enable_disk_encryption     = true
-    enable_deployment          = true
-    enable_template_deployment = true
-  }
-    diag_object = {
-    log_analytics_workspace_id = module.azurerm_log_analytics_workspace.law_output.id
-    enabled_log = [
-      ["AuditEvent", true, 80],
-    ]
-    metric = [
-      ["AllMetrics", true, 80],
-    ]
-  }
+  
   naming_convention_info = local.naming_convention_info
   tags                   = local.tags
 }
 
-
-module "azure_user_assigned_identity" {
+module "azurerm_user_assigned_identity" {
   source                 = "git::https://github.com/BrettOJ/tf-az-module-auth-user-msi?ref=main"
   resource_group_name    = module.resource_groups.rg_output[1].name
   location               = var.location
@@ -141,7 +126,7 @@ module "azure_user_assigned_identity" {
 }
 
 resource "azurerm_key_vault_access_policy" "example-identity" {
-  key_vault_id = azurerm_key_vault.example.id
+  key_vault_id = module.azurerm_key_vault.key_vault_id
   tenant_id    = data.azurerm_client_config.current.tenant_id
   object_id    = module.azurerm_user_assigned_identity.msi_output.principal_id
 
@@ -165,7 +150,7 @@ resource "azurerm_key_vault_access_policy" "example-identity" {
 }
 
 resource "azurerm_key_vault_access_policy" "example-sp" {
-  key_vault_id = azurerm_key_vault.example.id
+  key_vault_id = module.azurerm_key_vault.key_vault_id
   tenant_id    = data.azurerm_client_config.current.tenant_id
   object_id    = data.azurerm_client_config.current.object_id
 
@@ -184,7 +169,7 @@ data "azuread_service_principal" "test" {
 }
 
 resource "azurerm_key_vault_access_policy" "example-cosmosdb" {
-  key_vault_id = azurerm_key_vault.example.id
+  key_vault_id = module.azurerm_key_vault.key_vault_id
   tenant_id    = data.azurerm_client_config.current.tenant_id
   object_id    = data.azuread_service_principal.test.object_id
 
@@ -199,7 +184,7 @@ resource "azurerm_key_vault_access_policy" "example-cosmosdb" {
 
 resource "azurerm_key_vault_key" "example" {
   name         = "test-keyvaultkey"
-  key_vault_id = azurerm_key_vault.example.id
+  key_vault_id = module.azurerm_key_vault.key_vault_id
   key_type     = "RSA"
   key_size     = 2048
 
@@ -211,11 +196,11 @@ resource "azurerm_key_vault_key" "example" {
     "verify",
     "wrapKey",
   ]
-  depends_on = [azurerm_key_vault.example, azurerm_key_vault_access_policy.example-sp]
+  depends_on = [module.azurerm_key_vault, azurerm_key_vault_access_policy.example-sp]
 }
 
 resource "azurerm_role_assignment" "example-role1" {
-  scope                = azurerm_key_vault.example.id
+  scope                = module.azurerm_key_vault.key_vault_id
   role_definition_name = "Contributor"
   principal_id         = module.azurerm_user_assigned_identity.msi_output.principal_id
 }
@@ -243,7 +228,7 @@ module "azurerm_machine_learning_workspace" {
   location                       = var.location
   resource_group_name            = module.resource_groups.rg_output[1].name
   application_insights_id        = module.azurerm_application_insights.app_insights_output.id
-  key_vault_id                   = azurerm_key_vault.example.id
+  key_vault_id                   = module.azurerm_key_vault.key_vault_id
   storage_account_id             = module.azure_storage_account.sst_output.id
   kind                           = var.kind
   container_registry_id          = var.container_registry_id
