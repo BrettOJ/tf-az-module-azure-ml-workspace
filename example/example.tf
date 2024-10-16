@@ -1,11 +1,11 @@
 locals {
   naming_convention_info = {
-    project_code = "ai"
-    env          = "env"
-    zone         = "zone"
+    project_code = "ml"
+    env          = "en"
+    zone         = "zn"
     tier         = "tier"
     name         = "001"
-    agency_code  = "na"
+    agency_code  = "bj"
   }
   tags = {
     environment = "Production"
@@ -183,7 +183,7 @@ resource "azurerm_key_vault_access_policy" "example-cosmosdb" {
 }
 
 resource "azurerm_key_vault_key" "example" {
-  name         = "test-keyvaultkey"
+  name         = "boj-keyvaultkey"
   key_vault_id = module.azurerm_key_vault.key_vault_id
   key_type     = "RSA"
   key_size     = 2048

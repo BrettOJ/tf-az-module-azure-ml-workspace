@@ -8,6 +8,6 @@ module "azml_ws_name" {
       tags      = var.tags
     }
   }
-  resource_type = "azfw-app-rule"
+  resource_type = "azml-ws"
 }
 
