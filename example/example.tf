@@ -1,11 +1,9 @@
 locals {
   naming_convention_info = {
-    project_code = "ml"
+    site         = "ml"
     env          = "en"
-    zone         = "zn"
-    tier         = "tier"
+    app         = "zn"
     name         = "001"
-    agency_code  = "bj"
   }
   tags = {
     environment = "Production"

@@ -126,12 +126,10 @@ variable "feature_store" {
 
 variable "naming_convention_info" {
   type = object({
-    project_code = string
+    site         = string
     env          = string
-    zone         = string
-    tier         = string
+    app          = string
     name         = string
-    agency_code  = string
   })
   description = "value of the naming convention info"
   
